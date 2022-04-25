@@ -119,24 +119,49 @@ public class FlightService {
         airportInfo.setArrivingFlights(numberOfArrivingFlights);
         airportInfo.setArrivingPiecesOfBaggage(piecesOfBaggageArriving);
         airportInfo.setDepartingPiecesOfBaggage(piecesOfBaggageDeparting);
+
         return airportInfo;
     }
 
     private WeightResponse calculateWeight(CargoEntity cargoEntity) {
-        int cargoWeight = cargoEntity.getCargos().stream()
+        WeightResponse weightResponse = new WeightResponse();
+
+        int cargosInKg = cargoEntity.getCargos().stream()
+                .filter(cargo -> cargo.getWeightUnit().equals("kg"))
                 .mapToInt(Cargo::getWeight)
                 .sum();
 
-        int baggageWeight = cargoEntity.getBaggage().stream()
+        int cargosInLb = cargoEntity.getCargos().stream()
+                .filter(cargo -> cargo.getWeightUnit().equals("lb"))
+                .mapToInt(Cargo::getWeight)
+                .sum();
+
+        double cargoWeightInKg = cargosInKg + weightResponse.calculateLbToKg(cargosInLb);
+        double cargoWeightInLb = weightResponse.calculateKgToLb(cargoWeightInKg);
+
+        int baggageInKg = cargoEntity.getBaggage().stream()
+                .filter(baggage -> baggage.getWeightUnit().equals("kg"))
                 .mapToInt(Baggage::getWeight)
                 .sum();
 
-        int totalWeight = cargoWeight + baggageWeight;
+        int baggageInLb = cargoEntity.getBaggage().stream()
+                .filter(baggage -> baggage.getWeightUnit().equals("lb"))
+                .mapToInt(Baggage::getWeight)
+                .sum();
 
-        WeightResponse weightResponse = new WeightResponse();
-        weightResponse.setCargoWeight(cargoWeight);
-        weightResponse.setBaggageWeight(baggageWeight);
-        weightResponse.setTotalWeight(totalWeight);
+        double baggageWeightInKg = baggageInKg + weightResponse.calculateLbToKg(baggageInLb);
+        double baggageWeightInLb = weightResponse.calculateKgToLb(baggageWeightInKg);
+
+        double totalWeightInKg = cargoWeightInKg + baggageWeightInKg;
+        double totalWeightInLb = cargoWeightInLb + baggageWeightInLb;
+
+        weightResponse.setCargoWeightInKg(cargoWeightInKg);
+        weightResponse.setCargoWeightInLb(cargoWeightInLb);
+        weightResponse.setBaggageWeightInKg(baggageWeightInKg);
+        weightResponse.setBaggageWeightInLb(baggageWeightInLb);
+        weightResponse.setTotalWeightInKg(totalWeightInKg);
+        weightResponse.setTotalWeightInLb(totalWeightInLb);
+
         return weightResponse;
     }
 }
